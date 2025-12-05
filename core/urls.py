@@ -25,6 +25,24 @@ urlpatterns = [
         name="document_create",
     ),
     path("documents/<uuid:pk>/delete/", views.document_delete, name="document_delete"),
+    # Analysis
+    path("assets/<uuid:pk>/analyze/", views.analyze_asset, name="analyze_asset"),
+    path("projects/<uuid:pk>/analyze/", views.analyze_project, name="analyze_project"),
     # Generation
     path("projects/<uuid:project_pk>/generate/", views.generate, name="generate"),
+    path(
+        "generations/<uuid:pk>/status/",
+        views.generation_status,
+        name="generation_status",
+    ),
+    path(
+        "generations/<uuid:pk>/stream/",
+        views.generation_stream,
+        name="generation_stream",
+    ),
+    path(
+        "generations/<uuid:pk>/results/",
+        views.generation_results,
+        name="generation_results",
+    ),
 ]

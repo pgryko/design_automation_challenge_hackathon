@@ -39,9 +39,12 @@
     // Fallback: poll for status if SSE fails
     (function() {
         const generationId = "{{ generation.pk }}";
+        const statusUrl = "{% url 'core:generation_status' generation.pk %}";
+        const resultsUrl = "{% url 'core:generation_results' generation.pk %}";
+
         const checkStatus = async () => {
             try {
-                const response = await fetch(`/api/generations/${generationId}/status/`);
+                const response = await fetch(statusUrl);
                 const data = await response.json();
 
                 document.getElementById('progress-bar').style.width = `${data.progress}%`;
@@ -49,8 +52,10 @@
                 document.getElementById('progress-message').textContent = data.message || 'Processing...';
 
                 if (data.status === 'completed' || data.status === 'failed') {
-                    // Refresh the results area
-                    htmx.trigger('#generation-results', 'refresh');
+                    // Load the results
+                    const resultsResponse = await fetch(resultsUrl);
+                    const resultsHtml = await resultsResponse.text();
+                    document.getElementById('generation-results').innerHTML = resultsHtml;
                     return;
                 }
 

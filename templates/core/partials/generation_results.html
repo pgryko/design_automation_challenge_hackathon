@@ -1,0 +1,87 @@
+{% if generation.status == 'completed' %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="text-lg font-medium text-gray-900">Generation Results</h3>
+        <p class="text-sm text-gray-500">{{ generation.num_variations }} variation{{ generation.num_variations|pluralize }} generated</p>
+    </div>
+    <div class="card-body">
+        <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+            <p class="text-sm text-gray-600"><strong>Prompt:</strong> {{ generation.prompt }}</p>
+        </div>
+
+        {% if generation.outputs.exists %}
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {% for output in generation.outputs.all %}
+            <div class="card overflow-hidden">
+                {% if output.image %}
+                <div class="aspect-w-16 aspect-h-9 bg-gray-100">
+                    <img src="{{ output.image.url }}"
+                         alt="Generated variation {{ output.variation_number }}"
+                         class="w-full h-64 object-cover">
+                </div>
+                {% else %}
+                <div class="p-4 bg-gray-50">
+                    <p class="text-sm text-gray-600">{{ output.metadata.content|default:"No image available"|linebreaks }}</p>
+                </div>
+                {% endif %}
+                <div class="p-3 border-t border-gray-100">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-900">Variation {{ output.variation_number }}</span>
+                        <span class="text-xs text-gray-500">{{ output.get_output_type_display }}</span>
+                    </div>
+                    {% if output.image %}
+                    <a href="{{ output.image.url }}"
+                       target="_blank"
+                       class="mt-2 inline-flex items-center text-sm text-primary-600 hover:text-primary-800">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Download
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8 text-gray-500">
+            <p>No outputs were generated. Please try again.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% elif generation.status == 'failed' %}
+<div class="card border-red-200 bg-red-50">
+    <div class="card-body">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <svg class="h-6 w-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800">Generation Failed</h3>
+                <p class="mt-1 text-sm text-red-700">{{ generation.error_message|default:"An unexpected error occurred" }}</p>
+                <button type="button"
+                        class="mt-3 btn-secondary text-sm"
+                        onclick="htmx.trigger('#generation-form', 'reset')">
+                    Try Again
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<!-- Still processing - show loading state -->
+<div class="card">
+    <div class="card-body text-center py-8">
+        <svg class="mx-auto h-10 w-10 text-primary-500 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <p class="mt-4 text-sm text-gray-500">{{ generation.progress_message|default:"Processing..." }}</p>
+    </div>
+</div>
+{% endif %}
