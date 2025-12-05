@@ -1,0 +1,75 @@
+<div class="space-y-6">
+    {% if project.generations.exists %}
+    <div class="space-y-4">
+        {% for generation in project.generations.all %}
+        <div class="card">
+            <div class="card-body">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
+                                {% if generation.status == 'completed' %}bg-green-100 text-green-800
+                                {% elif generation.status == 'processing' %}bg-yellow-100 text-yellow-800
+                                {% elif generation.status == 'failed' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ generation.get_status_display }}
+                            </span>
+                            <span class="text-sm text-gray-500">{{ generation.get_output_type_display }}</span>
+                        </div>
+                        <p class="mt-2 text-sm text-gray-900">{{ generation.prompt|truncatechars:200 }}</p>
+                        <p class="mt-1 text-xs text-gray-400">{{ generation.created_at|timesince }} ago</p>
+                    </div>
+                </div>
+
+                {% if generation.status == 'completed' and generation.outputs.exists %}
+                <div class="mt-4 grid grid-cols-3 gap-4">
+                    {% for output in generation.outputs.all %}
+                    <div class="relative group">
+                        <img src="{{ output.image.url }}"
+                             alt="Variation {{ output.variation_number }}"
+                             class="rounded-lg shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                             @click="window.open('{{ output.image.url }}', '_blank')">
+                        <div class="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <a href="{{ output.image.url }}"
+                               download
+                               class="p-1.5 bg-white rounded-full shadow-sm hover:bg-gray-100">
+                                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if generation.status == 'failed' and generation.error_message %}
+                <div class="mt-4 p-3 bg-red-50 rounded-lg">
+                    <p class="text-sm text-red-600">{{ generation.error_message }}</p>
+                </div>
+                {% endif %}
+
+                {% if generation.status == 'processing' %}
+                <div class="mt-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="flex-1 bg-gray-200 rounded-full h-2">
+                            <div class="bg-primary-500 h-2 rounded-full transition-all duration-300"
+                                 style="width: {{ generation.progress }}%"></div>
+                        </div>
+                        <span class="text-sm text-gray-500">{{ generation.progress }}%</span>
+                    </div>
+                    {% if generation.progress_message %}
+                    <p class="mt-1 text-sm text-gray-500">{{ generation.progress_message }}</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-8 text-gray-500">
+        <p>No generations yet. Go to the Generate tab to create your first design.</p>
+    </div>
+    {% endif %}
+</div>

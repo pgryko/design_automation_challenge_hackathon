@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Projects - Design Automation{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Projects</h1>
+            <p class="mt-1 text-sm text-gray-500">
+                Create and manage your design projects
+            </p>
+        </div>
+        <button type="button"
+                class="btn-primary"
+                hx-get="{% url 'core:project_create' %}"
+                hx-target="#modal-container"
+                hx-swap="innerHTML">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            New Project
+        </button>
+    </div>
+
+    <!-- Project Grid -->
+    <div id="project-list">
+        {% include "core/partials/project_list.html" %}
+    </div>
+</div>
+
+<!-- Modal container -->
+<div id="modal-container"></div>
+{% endblock %}

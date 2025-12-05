@@ -1,0 +1,28 @@
+{% if projects %}
+<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    {% for project in projects %}
+    {% include "core/partials/project_card.html" with project=project %}
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-12">
+    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+    <h3 class="mt-2 text-sm font-semibold text-gray-900">No projects</h3>
+    <p class="mt-1 text-sm text-gray-500">Get started by creating a new project.</p>
+    <div class="mt-6">
+        <button type="button"
+                class="btn-primary"
+                hx-get="{% url 'core:project_create' %}"
+                hx-target="#modal-container"
+                hx-swap="innerHTML">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            New Project
+        </button>
+    </div>
+</div>
+{% endif %}

@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom component styles */
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+  }
+
+  .btn-secondary {
+    @apply btn bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-gray-500;
+  }
+
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+  }
+
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden;
+  }
+
+  .card-header {
+    @apply px-6 py-4 border-b border-gray-200;
+  }
+
+  .card-body {
+    @apply px-6 py-4;
+  }
+
+  .input {
+    @apply block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+
+  /* HTMX loading indicator */
+  .htmx-indicator {
+    @apply opacity-0 transition-opacity;
+  }
+
+  .htmx-request .htmx-indicator {
+    @apply opacity-100;
+  }
+
+  .htmx-request.htmx-indicator {
+    @apply opacity-100;
+  }
+}
+
+/* Custom utility styles */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

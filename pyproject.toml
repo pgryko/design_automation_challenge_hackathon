@@ -1,0 +1,100 @@
+[project]
+name = "design-automation"
+version = "0.1.0"
+description = "AI-powered design assistant for generating UI mockups and visuals"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "django>=6.0",
+    "django-browser-reload>=1.21.0",
+    "django-extensions>=4.1",
+    "django-ninja>=1.5.1",
+    "httpx>=0.28.1",
+    "pillow>=12.0.0",
+    "python-dotenv>=1.2.1",
+]
+
+[dependency-groups]
+dev = [
+    "django-stubs>=5.2.8",
+    "mypy>=1.19.0",
+    "pre-commit>=4.5.0",
+    "pytest>=9.0.1",
+    "pytest-django>=4.11.1",
+    "pytest-xdist>=3.8.0",
+    "ruff>=0.14.8",
+]
+
+[tool.ruff]
+target-version = "py313"  # ruff doesn't support py314 yet
+line-length = 88
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "migrations",
+    "*.min.js",
+    "*.min.css",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "UP",     # pyupgrade
+    "DJ",     # flake8-django
+    "SIM",    # flake8-simplify
+    "RUF",    # ruff-specific rules
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "B008",   # do not perform function calls in argument defaults (needed for Django)
+    "RUF012", # mutable class attributes (needed for Django models)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["core", "config"]
+section-order = ["future", "standard-library", "django", "third-party", "first-party", "local-folder"]
+
+[tool.ruff.lint.isort.sections]
+django = ["django"]
+
+[tool.mypy]
+python_version = "3.13"  # mypy doesn't support 3.14 yet
+plugins = ["mypy_django_plugin.main"]
+strict = false
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+exclude = [
+    "migrations/",
+    ".venv/",
+]
+
+[tool.django-stubs]
+django_settings_module = "config.settings"
+
+[tool.bandit]
+exclude_dirs = [".venv", "tests", "migrations"]
+skips = ["B101"]  # assert_used - OK in tests
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--tb=short",
+    "-n", "auto",  # pytest-xdist: auto-detect CPU cores
+    "--dist=loadfile",  # distribute tests by file
+]
+testpaths = ["tests", "core"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]

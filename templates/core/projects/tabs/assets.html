@@ -1,0 +1,93 @@
+<div class="space-y-6">
+    <!-- Upload Zone -->
+    <div class="card"
+         x-data="{ isDragging: false }"
+         @dragover.prevent="isDragging = true"
+         @dragleave.prevent="isDragging = false"
+         @drop.prevent="isDragging = false">
+        <form hx-post="{% url 'core:asset_upload' project.pk %}"
+              hx-target="#asset-grid"
+              hx-swap="innerHTML"
+              hx-encoding="multipart/form-data"
+              class="card-body">
+            {% csrf_token %}
+            <div :class="isDragging ? 'border-primary-500 bg-primary-50' : 'border-gray-300'"
+                 class="border-2 border-dashed rounded-lg p-8 text-center transition-colors">
+                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <div class="mt-4">
+                    <label for="asset-upload" class="cursor-pointer">
+                        <span class="text-primary-600 hover:text-primary-500 font-medium">Upload design assets</span>
+                        <input id="asset-upload"
+                               name="images"
+                               type="file"
+                               accept="image/*"
+                               multiple
+                               class="sr-only"
+                               @change="$el.form.requestSubmit()">
+                    </label>
+                    <span class="text-gray-500"> or drag and drop</span>
+                </div>
+                <p class="mt-1 text-xs text-gray-500">PNG, JPG, GIF up to 10MB each</p>
+
+                <div class="mt-4">
+                    <select name="asset_type" class="input w-auto mx-auto">
+                        <option value="ui_screenshot">UI Screenshot</option>
+                        <option value="style_guide">Style Guide</option>
+                        <option value="brand_image">Brand Image</option>
+                        <option value="marketing">Marketing Material</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Style Summary -->
+    {% if project.style_summary %}
+    <div class="card">
+        <div class="card-header">
+            <h3 class="text-lg font-medium text-gray-900">Extracted Style</h3>
+        </div>
+        <div class="card-body">
+            <p class="text-sm text-gray-600 whitespace-pre-wrap">{{ project.style_summary }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Asset Grid -->
+    <div id="asset-grid">
+        {% if project.assets.exists %}
+        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {% for asset in project.assets.all %}
+            <div class="group relative card overflow-hidden">
+                <div class="aspect-w-1 aspect-h-1 w-full overflow-hidden bg-gray-100">
+                    <img src="{{ asset.image.url }}"
+                         alt="{{ asset.filename }}"
+                         class="h-48 w-full object-cover object-center group-hover:opacity-75">
+                </div>
+                <div class="p-3">
+                    <p class="text-sm font-medium text-gray-900 truncate">{{ asset.filename }}</p>
+                    <p class="text-xs text-gray-500">{{ asset.get_asset_type_display }}</p>
+                </div>
+                <button type="button"
+                        class="absolute top-2 right-2 p-1 bg-white rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                        hx-delete="{% url 'core:asset_delete' asset.pk %}"
+                        hx-target="#asset-grid"
+                        hx-swap="innerHTML"
+                        hx-confirm="Delete this asset?">
+                    <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8 text-gray-500">
+            <p>No assets uploaded yet. Upload some design references to get started.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
