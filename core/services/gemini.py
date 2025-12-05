@@ -247,6 +247,7 @@ Generate the image now."""
             "messages": [{"role": "user", "content": content}],
             "max_tokens": 4096,
             "temperature": 0.8,
+            "modalities": ["image", "text"],  # Enable image generation
         }
 
         async with httpx.AsyncClient(timeout=120.0) as client:
@@ -263,17 +264,24 @@ Generate the image now."""
                 raise GeminiServiceError(f"API error: {response.status_code}")
 
             data = response.json()
-
-            # Check for image in response
             message = data["choices"][0]["message"]
+
+            # Check for images array (OpenRouter SDK format)
+            if message.get("images"):
+                for image in message["images"]:
+                    image_url = image.get("image_url", {}).get("url", "")
+                    if image_url.startswith("data:"):
+                        # Extract base64 data from data URL
+                        base64_data = image_url.split(",")[1]
+                        return base64.b64decode(base64_data)
 
             # Handle different response formats for image generation
             if "content" in message:
-                content = message["content"]
+                resp_content = message["content"]
 
                 # If content is a list (multimodal response)
-                if isinstance(content, list):
-                    for item in content:
+                if isinstance(resp_content, list):
+                    for item in resp_content:
                         if isinstance(item, dict) and item.get("type") == "image_url":
                             image_url_data = item.get("image_url", {})
                             if isinstance(image_url_data, dict):
@@ -284,14 +292,14 @@ Generate the image now."""
                                     return base64.b64decode(base64_data)
 
                 # If content is a string, it might contain base64 image
-                if isinstance(content, str):
-                    if "data:image" in content:
-                        base64_data = content.split(",")[1].split('"')[0]
+                if isinstance(resp_content, str):
+                    if "data:image" in resp_content:
+                        base64_data = resp_content.split(",")[1].split('"')[0]
                         return base64.b64decode(base64_data)
 
                     # Return as text if no image found (for debugging)
                     raise GeminiServiceError(
-                        f"No image in response. Model returned: {content[:500]}"
+                        f"No image in response. Model returned: {resp_content[:500]}"
                     )
 
             raise GeminiServiceError("Unexpected response format from API")
