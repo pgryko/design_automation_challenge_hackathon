@@ -82,7 +82,7 @@ class StyleService:
         # Get all assets with extracted styles
         assets = project.assets.exclude(extracted_style={})
 
-        if not assets.exists():
+        if not await assets.aexists():
             return ""
 
         # Collect all style data
@@ -236,8 +236,7 @@ class StyleService:
             result = await self.extract_asset_style(asset)
             results.append({"asset_id": str(asset.pk), "result": result})
 
-        # Update aggregated style
-        if results:
-            await self.aggregate_project_style(project)
+        # Always update aggregated style (even if no new assets were analyzed)
+        await self.aggregate_project_style(project)
 
         return results

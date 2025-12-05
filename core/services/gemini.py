@@ -116,7 +116,9 @@ class GeminiService:
                 raise GeminiServiceError(f"API error: {response.status_code}")
 
             data = response.json()
-            result: str = data["choices"][0]["message"]["content"]
+            message = data["choices"][0]["message"]
+            # Handle reasoning models that return content in 'reasoning' field
+            result: str = message.get("content", "") or message.get("reasoning", "")
             return result
 
     async def extract_style(self, image_path: str | Path) -> dict:
@@ -352,5 +354,7 @@ Provide a detailed description that could be used to create the design, includin
                 raise GeminiServiceError(f"API error: {response.status_code}")
 
             data = response.json()
-            result: str = data["choices"][0]["message"]["content"]
+            message = data["choices"][0]["message"]
+            # Handle reasoning models that return content in 'reasoning' field
+            result: str = message.get("content", "") or message.get("reasoning", "")
             return result

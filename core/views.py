@@ -343,6 +343,8 @@ async def _run_generation_background(generation_pk):
     from django.core.files.base import ContentFile
     from django.utils import timezone
 
+    from asgiref.sync import sync_to_async
+
     from core.models import GeneratedOutput, GenerationRequest
 
     try:
@@ -356,9 +358,11 @@ async def _run_generation_background(generation_pk):
         generation.progress_message = "Preparing style context..."
         await generation.asave()
 
-        # Build style context
+        # Build style context (sync method, wrap with sync_to_async)
         style_service = StyleService()
-        style_context = style_service.build_style_context(generation.project)
+        style_context = await sync_to_async(style_service.build_style_context)(
+            generation.project
+        )
 
         generation.progress = 20
         generation.progress_message = "Generating designs..."
