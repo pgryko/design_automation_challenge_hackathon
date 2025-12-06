@@ -83,9 +83,33 @@ design_automation_challenge_hackathon/
 2. **UI Test**: End-to-end flow generated signup form matching reference style
 3. **History Display**: Generated images show as thumbnails with download option
 
+## Session Update (2025-12-06)
+
+### Document Support - COMPLETED
+
+Implemented file content extraction using **Docling** library:
+
+**New File:** `core/services/document.py`
+- `extract_content()` - Main extraction function
+- Supports: PDF, DOCX, PPTX, TXT, MD, HTML
+- Uses Docling for complex formats, direct read for plain text
+- Handles encoding detection with fallbacks
+
+**Updated Files:**
+- `core/views.py:document_create` - Now extracts content from uploaded files
+- `templates/core/projects/tabs/documents.html` - Accepts more file types, shows errors
+- `pyproject.toml` - Added docling>=2.64.0, adjusted pillow<12.0.0
+
+**Flow:**
+```
+Upload PDF/DOCX/PPTX → Docling extracts markdown → Stored in doc.content → AI summarizes → Used in generation
+```
+
+**Tested:** Successfully extracted 8,017 chars from challenge PDF using MPS acceleration.
+
 ## Remaining Hackathon Phases
 
-1. **Document Support** - Process design guidelines and brand documents
+1. ~~**Document Support**~~ ✅ COMPLETED
 2. **Polish & Export** - Add export options (Figma, CSS, etc.)
 3. **Demo Preparation** - Create demo video and presentation
 

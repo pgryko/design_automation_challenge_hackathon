@@ -1,4 +1,10 @@
 <div class="space-y-6">
+    {% if error_message %}
+    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+        <p class="text-sm">{{ error_message }}</p>
+    </div>
+    {% endif %}
+
     <!-- Add Document Form -->
     <div class="card">
         <div class="card-header">
@@ -46,8 +52,8 @@
 
                 <div x-show="mode === 'upload'" x-cloak>
                     <label for="doc-file" class="label">File</label>
-                    <input type="file" name="file" id="doc-file" accept=".txt,.md,.pdf" class="input">
-                    <p class="mt-1 text-xs text-gray-500">Supports TXT, MD, PDF files</p>
+                    <input type="file" name="file" id="doc-file" accept=".txt,.md,.pdf,.docx,.pptx,.html,.htm" class="input">
+                    <p class="mt-1 text-xs text-gray-500">Supports PDF, DOCX, PPTX, TXT, MD, HTML files</p>
                 </div>
             </div>
 

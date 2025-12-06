@@ -12,7 +12,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from .models import ContextDocument, DesignAsset, GenerationRequest, Project
-from .services import GeminiService, StyleService
+from .services import GeminiService, StyleService, extract_content
 from .services.gemini import GeminiServiceError
 
 logger = logging.getLogger(__name__)
@@ -234,7 +234,23 @@ def document_create(request, project_pk):
     content = request.POST.get("content", "").strip()
     uploaded_file = request.FILES.get("file")
 
-    if title:
+    error_message = None
+
+    # Extract content from uploaded file if present
+    if uploaded_file and not content:
+        try:
+            content = extract_content(uploaded_file)
+            logger.info(
+                f"Extracted {len(content)} chars from {uploaded_file.name}"
+            )
+        except ValueError as e:
+            error_message = str(e)
+            logger.warning(f"Unsupported file type: {e}")
+        except RuntimeError as e:
+            error_message = f"Failed to extract content: {e}"
+            logger.error(f"Content extraction failed: {e}")
+
+    if title and (content or not error_message):
         doc = ContextDocument.objects.create(
             project=project,
             title=title,
@@ -245,12 +261,15 @@ def document_create(request, project_pk):
             doc.file = uploaded_file
             doc.save()
 
-        # Generate summary for the document
+        # Generate summary for the document content
         if content:
             asyncio.run(_summarize_document(doc))
 
     # Return updated document list
-    return render(request, "core/projects/tabs/documents.html", {"project": project})
+    context = {"project": project}
+    if error_message:
+        context["error_message"] = error_message
+    return render(request, "core/projects/tabs/documents.html", context)
 
 
 async def _summarize_document(doc):
@@ -282,8 +301,15 @@ async def _summarize_document(doc):
             if response.status_code == 200:
                 data = response.json()
                 summary = data["choices"][0]["message"]["content"]
-                doc.summary = summary
-                await doc.asave()
+                # Use sync save wrapped in sync_to_async for reliable persistence
+                from asgiref.sync import sync_to_async
+
+                @sync_to_async
+                def save_summary():
+                    doc.summary = summary
+                    doc.save(update_fields=["summary"])
+
+                await save_summary()
                 logger.info(f"Generated summary for document {doc.pk}")
 
     except Exception as e:
