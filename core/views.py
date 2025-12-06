@@ -125,6 +125,13 @@ def project_delete(request: HttpRequest, pk: UUID) -> HttpResponse | HttpRespons
     return redirect("core:index")
 
 
+@require_http_methods(["GET"])
+def project_delete_confirm(request: HttpRequest, pk: UUID) -> HttpResponse:
+    """Show delete confirmation modal for a project."""
+    project = get_object_or_404(Project, pk=pk)
+    return render(request, "core/projects/delete_modal.html", {"project": project})
+
+
 @require_POST
 def asset_upload(request: HttpRequest, project_pk: UUID) -> HttpResponse:
     """Upload design assets."""
@@ -150,7 +157,10 @@ def asset_upload(request: HttpRequest, project_pk: UUID) -> HttpResponse:
 
     # Return updated asset grid
     project.refresh_from_db()
-    return render(request, "core/projects/tabs/assets.html", {"project": project})
+    is_htmx = bool(request.headers.get("HX-Request"))
+    # Return just the asset grid partial for HTMX requests
+    template = "core/partials/asset_grid.html" if is_htmx else "core/projects/tabs/assets.html"
+    return render(request, template, {"project": project, "is_htmx": is_htmx})
 
 
 async def _extract_asset_style_background(asset_pk: UUID) -> None:
@@ -201,7 +211,7 @@ def analyze_project(request: HttpRequest, pk: UUID) -> HttpResponse | JsonRespon
         if request.headers.get("HX-Request"):
             project.refresh_from_db()
             return render(
-                request, "core/projects/tabs/assets.html", {"project": project}
+                request, "core/projects/tabs/assets.html", {"project": project, "is_htmx": True}
             )
 
         return JsonResponse({"success": True, "analyzed": len(results)})
@@ -228,7 +238,7 @@ def asset_delete(request: HttpRequest, pk: UUID) -> HttpResponse | HttpResponseR
     # Return updated asset grid
     if request.headers.get("HX-Request"):
         project.refresh_from_db()
-        return render(request, "core/projects/tabs/assets.html", {"project": project})
+        return render(request, "core/partials/asset_grid.html", {"project": project, "is_htmx": True})
 
     return redirect("core:project_detail", pk=project.pk)
 
@@ -281,10 +291,13 @@ def document_create(request: HttpRequest, project_pk: UUID) -> HttpResponse:
             asyncio.run(_summarize_document(doc))
 
     # Return updated document list
-    context: dict[str, Any] = {"project": project}
+    is_htmx = bool(request.headers.get("HX-Request"))
+    context: dict[str, Any] = {"project": project, "is_htmx": is_htmx}
     if error_message:
         context["error_message"] = error_message
-    return render(request, "core/projects/tabs/documents.html", context)
+    # Return just the document list partial for HTMX requests
+    template = "core/partials/document_list.html" if is_htmx else "core/projects/tabs/documents.html"
+    return render(request, template, context)
 
 
 async def _summarize_document(doc: ContextDocument) -> None:
@@ -340,7 +353,7 @@ def document_delete(request: HttpRequest, pk: UUID) -> HttpResponse | HttpRespon
 
     if request.headers.get("HX-Request"):
         return render(
-            request, "core/projects/tabs/documents.html", {"project": project}
+            request, "core/partials/document_list.html", {"project": project, "is_htmx": True}
         )
 
     return redirect("core:project_detail", pk=project.pk)
@@ -577,10 +590,11 @@ def generation_results(request: HttpRequest, pk: UUID) -> HttpResponse:
     generation = get_object_or_404(GenerationRequest, pk=pk)
     project = generation.project
 
+    is_htmx = bool(request.headers.get("HX-Request"))
     return render(
         request,
         "core/partials/generation_results.html",
-        {"generation": generation, "project": project},
+        {"generation": generation, "project": project, "is_htmx": is_htmx},
     )
 
 

@@ -1,0 +1,12 @@
+{% if is_htmx %}
+<!-- Out-of-band swap for tab counters (only on HTMX requests) -->
+<span id="assets-count" hx-swap-oob="true" class="ml-2 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+    {{ project.assets.count }}
+</span>
+<span id="documents-count" hx-swap-oob="true" class="ml-2 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+    {{ project.documents.count }}
+</span>
+<span id="history-count" hx-swap-oob="true" class="ml-2 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+    {{ project.generations.count }}
+</span>
+{% endif %}

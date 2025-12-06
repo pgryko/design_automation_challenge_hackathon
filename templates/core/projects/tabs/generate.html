@@ -10,9 +10,9 @@
               hx-target="#generation-results"
               hx-swap="innerHTML"
               class="card-body space-y-4"
-              x-data="{ generating: false }"
+              x-data="{ generating: false, prompt: '' }"
               @htmx:before-request="generating = true"
-              @htmx:after-request="generating = false">
+              @htmx:after-request="generating = false; prompt = ''"
             {% csrf_token %}
 
             <div>
@@ -22,7 +22,13 @@
                           rows="4"
                           class="input"
                           required
+                          x-model="prompt"
                           placeholder="Example: Generate a 3-screen onboarding flow showing: 1. Welcome with value proposition 2. Feature highlights 3. Sign up / Get started"></textarea>
+                <p class="mt-1 text-xs" :class="prompt.trim().length < 10 ? 'text-gray-400' : 'text-green-600'">
+                    <span x-show="prompt.trim().length === 0">Describe what you want to create</span>
+                    <span x-show="prompt.trim().length > 0 && prompt.trim().length < 10">Keep going... be more specific</span>
+                    <span x-show="prompt.trim().length >= 10">Ready to generate!</span>
+                </p>
             </div>
 
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -45,23 +51,56 @@
                 </div>
             </div>
 
-            <div class="flex items-center justify-between pt-4 border-t border-gray-200">
-                <div class="text-sm text-gray-500">
-                    {% if project.assets.count == 0 %}
-                    <span class="text-yellow-600">
-                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        No assets uploaded. Results may not match your style.
-                    </span>
-                    {% else %}
-                    Using {{ project.assets.count }} asset{{ project.assets.count|pluralize }} for style reference
-                    {% endif %}
+            <!-- Context Preview -->
+            <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Generation Context</p>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <!-- Asset Thumbnails -->
+                        {% if project.assets.exists %}
+                        <div class="flex items-center">
+                            <div class="flex -space-x-2">
+                                {% for asset in project.assets.all|slice:":3" %}
+                                <img src="{{ asset.image.url }}"
+                                     alt="{{ asset.filename }}"
+                                     class="w-8 h-8 rounded border-2 border-white object-cover shadow-sm"
+                                     title="{{ asset.filename }}">
+                                {% endfor %}
+                                {% if project.assets.count > 3 %}
+                                <div class="w-8 h-8 rounded border-2 border-white bg-gray-200 flex items-center justify-center text-xs font-medium text-gray-600 shadow-sm">
+                                    +{{ project.assets.count|add:"-3" }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <span class="ml-2 text-sm text-gray-600">{{ project.assets.count }} asset{{ project.assets.count|pluralize }}</span>
+                        </div>
+                        {% else %}
+                        <span class="text-sm text-yellow-600 flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            No assets (style may be generic)
+                        </span>
+                        {% endif %}
+
+                        <!-- Document Count -->
+                        {% if project.documents.exists %}
+                        <div class="flex items-center text-sm text-gray-600">
+                            <svg class="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            {{ project.documents.count }} doc{{ project.documents.count|pluralize }}
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
+            </div>
+
+            <div class="flex items-center justify-end pt-4">
                 <button type="submit"
                         class="btn-primary"
-                        :disabled="generating"
-                        :class="generating ? 'opacity-50 cursor-not-allowed' : ''">
+                        :disabled="generating || prompt.trim().length < 10"
+                        :class="(generating || prompt.trim().length < 10) ? 'opacity-50 cursor-not-allowed' : ''">
                     <template x-if="!generating">
                         <span class="flex items-center">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

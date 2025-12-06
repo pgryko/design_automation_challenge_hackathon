@@ -15,6 +15,11 @@ urlpatterns = [
     path("projects/<uuid:pk>/", views.project_detail, name="project_detail"),
     path("projects/<uuid:pk>/edit/", views.project_edit, name="project_edit"),
     path("projects/<uuid:pk>/delete/", views.project_delete, name="project_delete"),
+    path(
+        "projects/<uuid:pk>/delete/confirm/",
+        views.project_delete_confirm,
+        name="project_delete_confirm",
+    ),
     # Assets
     path("projects/<uuid:project_pk>/assets/", views.asset_upload, name="asset_upload"),
     path("assets/<uuid:pk>/delete/", views.asset_delete, name="asset_delete"),

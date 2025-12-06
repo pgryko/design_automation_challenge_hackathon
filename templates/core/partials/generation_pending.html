@@ -25,47 +25,87 @@
             <p id="progress-message" class="mt-2 text-sm text-gray-500">Preparing...</p>
         </div>
 
-        <!-- SSE connection for progress updates -->
-        <div hx-ext="sse"
-             sse-connect="{% url 'core:generation_stream' generation.pk %}"
-             sse-swap="message"
-             hx-target="#generation-results"
-             hx-swap="innerHTML">
+        <!-- SSE connection for progress updates (uses JavaScript handler, not HTMX swap) -->
+        <div id="sse-container"
+             hx-ext="sse"
+             sse-connect="{% url 'core:generation_stream' generation.pk %}">
         </div>
     </div>
 </div>
 
 <script>
-    // Fallback: poll for status if SSE fails
     (function() {
-        const generationId = "{{ generation.pk }}";
-        const statusUrl = "{% url 'core:generation_status' generation.pk %}";
         const resultsUrl = "{% url 'core:generation_results' generation.pk %}";
+        const statusUrl = "{% url 'core:generation_status' generation.pk %}";
+        let isComplete = false;
 
-        const checkStatus = async () => {
+        // Update progress bar from data
+        const updateProgress = (data) => {
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            const progressMessage = document.getElementById('progress-message');
+
+            if (progressBar) progressBar.style.width = `${data.progress}%`;
+            if (progressText) progressText.textContent = `${data.progress}%`;
+            if (progressMessage) progressMessage.textContent = data.message || 'Processing...';
+        };
+
+        // Load results when completed
+        const loadResults = async () => {
+            if (isComplete) return;
+            isComplete = true;
+
             try {
-                const response = await fetch(statusUrl);
-                const data = await response.json();
-
-                document.getElementById('progress-bar').style.width = `${data.progress}%`;
-                document.getElementById('progress-text').textContent = `${data.progress}%`;
-                document.getElementById('progress-message').textContent = data.message || 'Processing...';
-
-                if (data.status === 'completed' || data.status === 'failed') {
-                    // Load the results
-                    const resultsResponse = await fetch(resultsUrl);
-                    const resultsHtml = await resultsResponse.text();
-                    document.getElementById('generation-results').innerHTML = resultsHtml;
-                    return;
+                const resultsResponse = await fetch(resultsUrl);
+                const resultsHtml = await resultsResponse.text();
+                const resultsContainer = document.getElementById('generation-results');
+                if (resultsContainer) {
+                    resultsContainer.innerHTML = resultsHtml;
+                    // Trigger HTMX to process any new content
+                    if (window.htmx) htmx.process(resultsContainer);
                 }
-
-                setTimeout(checkStatus, 2000);
             } catch (e) {
-                setTimeout(checkStatus, 3000);
+                console.error('Failed to load results:', e);
             }
         };
 
-        // Start polling after a short delay
-        setTimeout(checkStatus, 1000);
+        // Listen for SSE events from HTMX
+        const sseContainer = document.getElementById('sse-container');
+        if (sseContainer) {
+            sseContainer.addEventListener('htmx:sseMessage', (event) => {
+                try {
+                    const data = JSON.parse(event.detail.data);
+                    updateProgress(data);
+                    if (data.status === 'completed' || data.status === 'failed') {
+                        loadResults();
+                    }
+                } catch (e) {
+                    console.error('Failed to parse SSE message:', e);
+                }
+            });
+        }
+
+        // Fallback polling in case SSE doesn't work
+        const checkStatus = async () => {
+            if (isComplete) return;
+
+            try {
+                const response = await fetch(statusUrl);
+                const data = await response.json();
+                updateProgress(data);
+
+                if (data.status === 'completed' || data.status === 'failed') {
+                    loadResults();
+                    return;
+                }
+
+                setTimeout(checkStatus, 3000);
+            } catch (e) {
+                setTimeout(checkStatus, 5000);
+            }
+        };
+
+        // Start polling after delay (SSE should update faster if it works)
+        setTimeout(checkStatus, 2000);
     })();
 </script>
