@@ -6,8 +6,17 @@ import asyncio
 import json
 import logging
 import threading
+from collections.abc import Coroutine, Generator
+from typing import Any
+from uuid import UUID
 
-from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
+from django.http import (
+    HttpRequest,
+    HttpResponse,
+    HttpResponseRedirect,
+    JsonResponse,
+    StreamingHttpResponse,
+)
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
@@ -24,10 +33,10 @@ from .services.gemini import GeminiServiceError
 logger = logging.getLogger(__name__)
 
 
-def _run_async_in_thread(coro):
+def _run_async_in_thread(coro: Coroutine[Any, Any, Any]) -> threading.Thread:
     """Run an async coroutine in a new thread with its own event loop."""
 
-    def target():
+    def target() -> None:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
@@ -41,14 +50,14 @@ def _run_async_in_thread(coro):
 
 
 @require_GET
-def index(request):
+def index(request: HttpRequest) -> HttpResponse:
     """Home page - list all projects."""
     projects = Project.objects.all()
     return render(request, "core/index.html", {"projects": projects})
 
 
 @require_http_methods(["GET", "POST"])
-def project_create(request):
+def project_create(request: HttpRequest) -> HttpResponse | HttpResponseRedirect:
     """Create a new project."""
     if request.method == "POST":
         name = request.POST.get("name", "").strip()
@@ -71,14 +80,14 @@ def project_create(request):
 
 
 @require_GET
-def project_detail(request, pk):
+def project_detail(request: HttpRequest, pk: UUID) -> HttpResponse:
     """View project details."""
     project = get_object_or_404(Project, pk=pk)
     return render(request, "core/projects/detail.html", {"project": project})
 
 
 @require_http_methods(["GET", "POST"])
-def project_edit(request, pk):
+def project_edit(request: HttpRequest, pk: UUID) -> HttpResponse | HttpResponseRedirect:
     """Edit a project."""
     project = get_object_or_404(Project, pk=pk)
 
@@ -102,7 +111,7 @@ def project_edit(request, pk):
 
 
 @require_http_methods(["DELETE"])
-def project_delete(request, pk):
+def project_delete(request: HttpRequest, pk: UUID) -> HttpResponse | HttpResponseRedirect:
     """Delete a project."""
     project = get_object_or_404(Project, pk=pk)
     project.delete()
@@ -117,7 +126,7 @@ def project_delete(request, pk):
 
 
 @require_POST
-def asset_upload(request, project_pk):
+def asset_upload(request: HttpRequest, project_pk: UUID) -> HttpResponse:
     """Upload design assets."""
     project = get_object_or_404(Project, pk=project_pk)
     asset_type = request.POST.get("asset_type", "ui_screenshot")
@@ -130,7 +139,7 @@ def asset_upload(request, project_pk):
             project=project,
             image=uploaded_file,
             asset_type=asset_type,
-            filename=uploaded_file.name,
+            filename=uploaded_file.name or "unnamed_asset",
         )
         created_assets.append(asset)
 
@@ -144,7 +153,7 @@ def asset_upload(request, project_pk):
     return render(request, "core/projects/tabs/assets.html", {"project": project})
 
 
-async def _extract_asset_style_background(asset_pk):
+async def _extract_asset_style_background(asset_pk: UUID) -> None:
     """Background task to extract style from an asset."""
     try:
         from core.models import DesignAsset
@@ -161,7 +170,7 @@ async def _extract_asset_style_background(asset_pk):
 
 
 @require_POST
-def analyze_asset(request, pk):
+def analyze_asset(request: HttpRequest, pk: UUID) -> JsonResponse:
     """Manually trigger style analysis for a single asset."""
     asset = get_object_or_404(DesignAsset, pk=pk)
 
@@ -173,7 +182,7 @@ def analyze_asset(request, pk):
         return JsonResponse({"success": False, "error": str(e)}, status=500)
 
 
-async def _analyze_asset_sync(asset):
+async def _analyze_asset_sync(asset: DesignAsset) -> dict[str, Any]:
     """Helper to run async style extraction."""
     style_service = StyleService()
     result = await style_service.extract_asset_style(asset)
@@ -182,7 +191,7 @@ async def _analyze_asset_sync(asset):
 
 
 @require_POST
-def analyze_project(request, pk):
+def analyze_project(request: HttpRequest, pk: UUID) -> HttpResponse | JsonResponse:
     """Analyze all unanalyzed assets in a project."""
     project = get_object_or_404(Project, pk=pk)
 
@@ -200,14 +209,14 @@ def analyze_project(request, pk):
         return JsonResponse({"success": False, "error": str(e)}, status=500)
 
 
-async def _analyze_project_sync(project):
+async def _analyze_project_sync(project: Project) -> list[dict[str, Any]]:
     """Helper to run async project analysis."""
     style_service = StyleService()
     return await style_service.analyze_all_assets(project)
 
 
 @require_http_methods(["DELETE"])
-def asset_delete(request, pk):
+def asset_delete(request: HttpRequest, pk: UUID) -> HttpResponse | HttpResponseRedirect:
     """Delete a design asset."""
     asset = get_object_or_404(DesignAsset, pk=pk)
     project = asset.project
@@ -224,14 +233,14 @@ def asset_delete(request, pk):
     return redirect("core:project_detail", pk=project.pk)
 
 
-async def _reaggregate_style(project):
+async def _reaggregate_style(project: Project) -> None:
     """Re-aggregate project style after asset changes."""
     style_service = StyleService()
     await style_service.aggregate_project_style(project)
 
 
 @require_POST
-def document_create(request, project_pk):
+def document_create(request: HttpRequest, project_pk: UUID) -> HttpResponse:
     """Create a context document."""
     project = get_object_or_404(Project, pk=project_pk)
 
@@ -272,13 +281,13 @@ def document_create(request, project_pk):
             asyncio.run(_summarize_document(doc))
 
     # Return updated document list
-    context = {"project": project}
+    context: dict[str, Any] = {"project": project}
     if error_message:
         context["error_message"] = error_message
     return render(request, "core/projects/tabs/documents.html", context)
 
 
-async def _summarize_document(doc):
+async def _summarize_document(doc: ContextDocument) -> None:
     """Generate a summary for a document."""
     try:
         gemini = GeminiService()
@@ -311,7 +320,7 @@ async def _summarize_document(doc):
                 from asgiref.sync import sync_to_async
 
                 @sync_to_async
-                def save_summary():
+                def save_summary() -> None:
                     doc.summary = summary
                     doc.save(update_fields=["summary"])
 
@@ -323,7 +332,7 @@ async def _summarize_document(doc):
 
 
 @require_http_methods(["DELETE"])
-def document_delete(request, pk):
+def document_delete(request: HttpRequest, pk: UUID) -> HttpResponse | HttpResponseRedirect:
     """Delete a context document."""
     doc = get_object_or_404(ContextDocument, pk=pk)
     project = doc.project
@@ -338,7 +347,7 @@ def document_delete(request, pk):
 
 
 @require_POST
-def generate(request, project_pk):
+def generate(request: HttpRequest, project_pk: UUID) -> HttpResponse:
     """Start a new generation request."""
     project = get_object_or_404(Project, pk=project_pk)
 
@@ -368,7 +377,7 @@ def generate(request, project_pk):
     return render(request, "core/projects/tabs/generate.html", {"project": project})
 
 
-async def _run_generation_background(generation_pk):
+async def _run_generation_background(generation_pk: UUID) -> None:
     """Background task to run generation."""
     from datetime import datetime
 
@@ -482,7 +491,7 @@ async def _run_generation_background(generation_pk):
 
 
 @require_GET
-def generation_status(request, pk):
+def generation_status(request: HttpRequest, pk: UUID) -> JsonResponse:
     """Get the current status of a generation request."""
     generation = get_object_or_404(GenerationRequest, pk=pk)
     return JsonResponse(
@@ -496,11 +505,11 @@ def generation_status(request, pk):
 
 
 @require_GET
-def generation_stream(request, pk):
+def generation_stream(request: HttpRequest, pk: UUID) -> StreamingHttpResponse:
     """SSE endpoint for generation progress."""
     generation = get_object_or_404(GenerationRequest, pk=pk)
 
-    def event_stream():
+    def event_stream() -> Generator[str]:
         import time
 
         last_progress = -1
@@ -563,7 +572,7 @@ def generation_stream(request, pk):
 
 
 @require_GET
-def generation_results(request, pk):
+def generation_results(request: HttpRequest, pk: UUID) -> HttpResponse:
     """Get the results of a completed generation."""
     generation = get_object_or_404(GenerationRequest, pk=pk)
     project = generation.project
@@ -576,7 +585,7 @@ def generation_results(request, pk):
 
 
 @require_POST
-def refine_output(request, pk):
+def refine_output(request: HttpRequest, pk: UUID) -> HttpResponse | JsonResponse:
     """Start a refinement of a specific generated output."""
     output = get_object_or_404(GeneratedOutput, pk=pk)
     original_request = output.request
@@ -609,7 +618,7 @@ def refine_output(request, pk):
     )
 
 
-async def _run_refinement_background(generation_pk, source_output_pk):
+async def _run_refinement_background(generation_pk: UUID, source_output_pk: UUID) -> None:
     """Background task to run refinement."""
     from datetime import datetime
 
@@ -720,7 +729,7 @@ async def _run_refinement_background(generation_pk, source_output_pk):
 
 
 @require_GET
-def download_generation(request, pk):
+def download_generation(request: HttpRequest, pk: UUID) -> HttpResponse | JsonResponse:
     """Download all outputs from a generation as a ZIP file."""
     import io
     import zipfile
@@ -748,7 +757,7 @@ def download_generation(request, pk):
 
 
 @require_GET
-def download_output(request, pk):
+def download_output(request: HttpRequest, pk: UUID) -> HttpResponse | JsonResponse:
     """Download a single output image."""
     output = get_object_or_404(GeneratedOutput, pk=pk)
 

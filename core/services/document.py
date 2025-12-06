@@ -69,7 +69,7 @@ def _extract_text_file(uploaded_file: UploadedFile) -> str:
 
     Handles encoding detection with fallbacks.
     """
-    content_bytes = uploaded_file.read()
+    content_bytes: bytes = uploaded_file.read()
 
     # Try common encodings
     encodings = ["utf-8", "utf-8-sig", "latin-1", "cp1252"]

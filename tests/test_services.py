@@ -301,3 +301,203 @@ class TestGeminiServiceAsync:
                 )
 
                 assert result == fake_image
+
+
+class TestGeminiServiceEdgeCases:
+    """Edge case tests for GeminiService error handling."""
+
+    def test_init_without_api_key_raises_error(self):
+        """Test that missing API key raises GeminiServiceError."""
+        with patch("core.services.gemini.settings") as mock_settings:
+            mock_settings.OPENROUTER_API_KEY = ""  # Empty API key
+            mock_settings.OPENROUTER_MODEL = "test-model"
+            mock_settings.OPENROUTER_BASE_URL = "https://test.api"
+
+            with pytest.raises(GeminiServiceError, match="OPENROUTER_API_KEY is not configured"):
+                GeminiService()
+
+    def test_encode_image_file_not_found(self):
+        """Test that encoding nonexistent image raises error."""
+        with patch("core.services.gemini.settings") as mock_settings:
+            mock_settings.OPENROUTER_API_KEY = "key"
+            mock_settings.OPENROUTER_MODEL = "model"
+            mock_settings.OPENROUTER_BASE_URL = "url"
+
+            service = GeminiService()
+            with pytest.raises(GeminiServiceError, match="Image file not found"):
+                service._encode_image("/nonexistent/path/image.png")
+
+    def test_get_mime_type_webp(self):
+        """Test MIME type detection for WebP format."""
+        with patch("core.services.gemini.settings") as mock_settings:
+            mock_settings.OPENROUTER_API_KEY = "key"
+            mock_settings.OPENROUTER_MODEL = "model"
+            mock_settings.OPENROUTER_BASE_URL = "url"
+
+            service = GeminiService()
+            assert service._get_mime_type("image.webp") == "image/webp"
+
+
+@pytest.mark.asyncio
+class TestGeminiServiceAsyncEdgeCases:
+    """Edge case async tests for GeminiService."""
+
+    @pytest.fixture
+    def mock_service(self):
+        """Create a GeminiService with mocked settings."""
+        with patch("core.services.gemini.settings") as mock_settings:
+            mock_settings.OPENROUTER_API_KEY = "test-key"
+            mock_settings.OPENROUTER_MODEL = "test-model"
+            mock_settings.OPENROUTER_BASE_URL = "https://test.api"
+            yield GeminiService()
+
+    async def test_generate_image_rate_limit_error(self, mock_service):
+        """Test that rate limit errors (429) raise GeminiServiceError."""
+        mock_response = MagicMock()
+        mock_response.status_code = 429
+        mock_response.text = "Rate limit exceeded"
+
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_client.return_value.__aenter__.return_value.post = AsyncMock(
+                return_value=mock_response
+            )
+
+            with pytest.raises(GeminiServiceError, match="API error: 429"):
+                await mock_service.generate_image(
+                    prompt="Test prompt",
+                    style_context="Test style",
+                )
+
+    async def test_generate_image_no_image_in_response(self, mock_service):
+        """Test that missing image in response raises GeminiServiceError."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "choices": [
+                {
+                    "message": {
+                        "content": "I cannot generate images directly."
+                    }
+                }
+            ]
+        }
+
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_client.return_value.__aenter__.return_value.post = AsyncMock(
+                return_value=mock_response
+            )
+
+            with pytest.raises(GeminiServiceError, match="No image in response"):
+                await mock_service.generate_image(
+                    prompt="Test prompt",
+                    style_context="Test style",
+                )
+
+    async def test_extract_style_invalid_json_returns_raw(self, mock_service):
+        """Test that invalid JSON in style extraction returns raw response."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "choices": [
+                {
+                    "message": {
+                        "content": "This is not valid JSON, just text about the design."
+                    }
+                }
+            ]
+        }
+
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_client.return_value.__aenter__.return_value.post = AsyncMock(
+                return_value=mock_response
+            )
+
+            with patch.object(mock_service, "_encode_image", return_value="base64data"):
+                result = await mock_service.extract_style(Path("test.png"))
+
+                # Should return raw response when JSON parsing fails
+                assert "raw_response" in result
+                assert "summary" in result
+
+    async def test_analyze_image_success(self, mock_service):
+        """Test successful image analysis."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "choices": [
+                {
+                    "message": {
+                        "content": "This is a modern dashboard design with blue colors."
+                    }
+                }
+            ]
+        }
+
+        with patch("httpx.AsyncClient") as mock_client:
+            mock_client.return_value.__aenter__.return_value.post = AsyncMock(
+                return_value=mock_response
+            )
+
+            with patch.object(mock_service, "_encode_image", return_value="base64data"):
+                result = await mock_service.analyze_image(
+                    Path("test.png"),
+                    "Describe this design."
+                )
+
+                assert "dashboard" in result.lower()
+
+
+class TestDocumentServiceEdgeCases:
+    """Edge case tests for document extraction."""
+
+    def test_is_supported_returns_true_for_pdf(self):
+        """Test is_supported returns True for PDF files."""
+        from core.services.document import is_supported
+
+        assert is_supported("document.pdf") is True
+        assert is_supported("Document.PDF") is True  # Case insensitive
+
+    def test_is_supported_returns_false_for_unsupported(self):
+        """Test is_supported returns False for unsupported files."""
+        from core.services.document import is_supported
+
+        assert is_supported("file.xyz") is False
+        assert is_supported("file.exe") is False
+        assert is_supported("noextension") is False
+
+    def test_extract_content_latin1_encoding(self):
+        """Test extracting content with Latin-1 encoding."""
+        # Content with Latin-1 characters (e.g., café)
+        content = "Café résumé naïve"
+        file = SimpleUploadedFile(
+            name="latin1.txt",
+            content=content.encode("latin-1"),
+            content_type="text/plain",
+        )
+        result = extract_content(file)
+        assert "Caf" in result  # At least partial match
+
+    def test_extract_content_utf8_with_bom(self):
+        """Test extracting content with UTF-8 BOM."""
+        content = "Hello with BOM"
+        # UTF-8 BOM prefix
+        file = SimpleUploadedFile(
+            name="bom.txt",
+            content=b"\xef\xbb\xbf" + content.encode("utf-8"),
+            content_type="text/plain",
+        )
+        result = extract_content(file)
+        assert "Hello with BOM" in result
+
+    def test_extract_content_html_uses_docling(self):
+        """Test that HTML files use Docling for extraction."""
+        with patch("core.services.document._extract_with_docling") as mock_docling:
+            mock_docling.return_value = "Extracted HTML content"
+            file = SimpleUploadedFile(
+                name="page.html",
+                content=b"<html><body>Hello</body></html>",
+                content_type="text/html",
+            )
+            result = extract_content(file)
+            assert result == "Extracted HTML content"
+            mock_docling.assert_called_once()

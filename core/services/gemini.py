@@ -6,6 +6,7 @@ import base64
 import json
 import logging
 from pathlib import Path
+from typing import Any
 
 from django.conf import settings
 
@@ -29,7 +30,11 @@ class GeminiService:
     - Image generation from prompts
     """
 
-    def __init__(self):
+    api_key: str
+    model: str
+    base_url: str
+
+    def __init__(self) -> None:
         self.api_key = settings.OPENROUTER_API_KEY
         self.model = settings.OPENROUTER_MODEL
         self.base_url = settings.OPENROUTER_BASE_URL
@@ -37,7 +42,7 @@ class GeminiService:
         if not self.api_key:
             raise GeminiServiceError("OPENROUTER_API_KEY is not configured")
 
-    def _get_headers(self) -> dict:
+    def _get_headers(self) -> dict[str, str]:
         """Get headers for API requests."""
         return {
             "Authorization": f"Bearer {self.api_key}",
@@ -121,7 +126,7 @@ class GeminiService:
             result: str = message.get("content", "") or message.get("reasoning", "")
             return result
 
-    async def extract_style(self, image_path: str | Path) -> dict:
+    async def extract_style(self, image_path: str | Path) -> dict[str, Any]:
         """
         Extract style information from a design image.
 
@@ -181,7 +186,7 @@ Return a JSON object with the following structure (respond ONLY with valid JSON,
             elif "```" in response:
                 json_str = response.split("```")[1].split("```")[0]
 
-            parsed: dict = json.loads(json_str.strip())
+            parsed: dict[str, Any] = json.loads(json_str.strip())
             return parsed
         except json.JSONDecodeError:
             logger.warning("Failed to parse style JSON, returning raw response")

@@ -309,3 +309,114 @@ class TestDownloadViews:
             reverse("core:download_generation", kwargs={"pk": uuid.uuid4()})
         )
         assert response.status_code == 404
+
+
+@pytest.mark.django_db
+class TestViewEdgeCases:
+    """Edge case tests for views error handling."""
+
+    def test_project_create_empty_name_fails(self, client):
+        """Test that creating project with empty name fails."""
+        response = client.post(
+            reverse("core:project_create"),
+            {
+                "name": "",  # Empty name
+                "description": "Test description",
+            },
+        )
+        # Should not redirect (form error)
+        assert response.status_code == 200
+        assert not Project.objects.filter(description="Test description").exists()
+
+    def test_project_edit_nonexistent_returns_404(self, client):
+        """Test editing nonexistent project returns 404."""
+        import uuid
+
+        response = client.get(
+            reverse("core:project_edit", kwargs={"pk": uuid.uuid4()})
+        )
+        assert response.status_code == 404
+
+    def test_project_delete_nonexistent_returns_404(self, client):
+        """Test deleting nonexistent project returns 404."""
+        import uuid
+
+        response = client.delete(
+            reverse("core:project_delete", kwargs={"pk": uuid.uuid4()})
+        )
+        assert response.status_code == 404
+
+    def test_asset_upload_no_files(self, client, project):
+        """Test asset upload with no files returns partial."""
+        response = client.post(
+            reverse("core:asset_upload", kwargs={"project_pk": project.pk}),
+            {
+                "asset_type": DesignAsset.AssetType.UI_SCREENSHOT,
+                # No files
+            },
+        )
+        # Should still return 200 (empty list is valid)
+        assert response.status_code == 200
+
+    def test_asset_delete_nonexistent_returns_404(self, client):
+        """Test deleting nonexistent asset returns 404."""
+        import uuid
+
+        response = client.delete(
+            reverse("core:asset_delete", kwargs={"pk": uuid.uuid4()})
+        )
+        assert response.status_code == 404
+
+    def test_document_create_empty_content_and_no_file(self, client, project):
+        """Test creating document with no content or file fails."""
+        response = client.post(
+            reverse("core:document_create", kwargs={"project_pk": project.pk}),
+            {
+                "title": "Empty Doc",
+                "doc_type": ContextDocument.DocType.SPEC,
+                # No content or file
+            },
+        )
+        # Should still return 200 (creates doc with empty content)
+        assert response.status_code == 200
+
+    def test_document_delete_nonexistent_returns_404(self, client):
+        """Test deleting nonexistent document returns 404."""
+        import uuid
+
+        response = client.delete(
+            reverse("core:document_delete", kwargs={"pk": uuid.uuid4()})
+        )
+        assert response.status_code == 404
+
+    def test_generation_status_nonexistent_returns_404(self, client):
+        """Test getting status of nonexistent generation returns 404."""
+        import uuid
+
+        response = client.get(
+            reverse("core:generation_status", kwargs={"pk": uuid.uuid4()})
+        )
+        assert response.status_code == 404
+
+    def test_generation_results_nonexistent_returns_404(self, client):
+        """Test getting results of nonexistent generation returns 404."""
+        import uuid
+
+        response = client.get(
+            reverse("core:generation_results", kwargs={"pk": uuid.uuid4()})
+        )
+        assert response.status_code == 404
+
+    def test_download_incomplete_generation_returns_error(self, client, project):
+        """Test downloading incomplete generation returns error."""
+        generation = GenerationRequest.objects.create(
+            project=project,
+            prompt="Test",
+            status=GenerationRequest.Status.PROCESSING,  # Not completed
+        )
+
+        response = client.get(
+            reverse("core:download_generation", kwargs={"pk": generation.pk})
+        )
+        assert response.status_code == 400
+        assert b"not complete" in response.content
