@@ -11,7 +11,13 @@ from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
-from .models import ContextDocument, DesignAsset, GeneratedOutput, GenerationRequest, Project
+from .models import (
+    ContextDocument,
+    DesignAsset,
+    GeneratedOutput,
+    GenerationRequest,
+    Project,
+)
 from .services import GeminiService, StyleService, extract_content
 from .services.gemini import GeminiServiceError
 

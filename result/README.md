@@ -9,7 +9,10 @@ result/
 ├── dqai/                    # Dashboard UI mockups
 │   ├── dashboard_v1.png     # Light mode dashboard (469KB)
 │   └── dashboard_dark_v1.png # Dark mode refinement (928KB)
-├── carveout/                # Reserved for additional demos
+├── carveout/                # Landing page, mobile app, and pricing demos
+│   ├── landing_hero_v1.png  # SaaS landing page hero (526KB)
+│   ├── mobile_fitness_v1.png # Mobile fitness app screen (869KB)
+│   └── pricing_table_v1.png # SaaS pricing table (506KB)
 └── README.md                # This file
 ```
 
@@ -47,6 +50,66 @@ Change the color scheme to use dark mode with a dark sidebar and dark background
 - Light text for contrast
 - Preserved structure and blue accent colors
 - Professional dark theme appearance
+
+### Landing Page Hero
+**File**: `carveout/landing_hero_v1.png`
+
+**Prompt Used**:
+```
+Design a modern SaaS landing page hero section with:
+1. A bold headline: "Transform Your Workflow"
+2. A subheadline explaining the product's key benefit
+3. Two CTA buttons: "Start Free Trial" (primary) and "Watch Demo" (secondary)
+4. A product screenshot or 3D illustration on the right side
+5. Subtle gradient background (purple to blue)
+6. Clean, professional tech startup aesthetic
+```
+
+**Result**: A professional SaaS hero section with:
+- Bold headline with clear value proposition
+- Primary and secondary CTAs
+- Product visualization
+- Modern gradient background
+
+### Mobile Fitness App
+**File**: `carveout/mobile_fitness_v1.png`
+
+**Prompt Used**:
+```
+Design a mobile fitness app home screen (iPhone format) showing:
+1. Greeting header "Good Morning, Alex" with profile avatar
+2. Today's workout card with exercise details and "Start" button
+3. Weekly progress ring showing 4/7 days completed
+4. Quick action buttons: Log Meal, Track Water, Check Stats
+5. Bottom navigation bar with 5 icons
+6. iOS-style design
+```
+
+**Result**: A mobile app screen with:
+- Personalized greeting and profile
+- Today's workout card
+- Progress visualization
+- Quick actions
+- iOS-style navigation
+
+### SaaS Pricing Table
+**File**: `carveout/pricing_table_v1.png`
+
+**Prompt Used**:
+```
+Design a SaaS pricing page section showing 3 pricing tiers:
+1. Basic tier ($9/mo): 5 projects, 10GB storage, Email support
+2. Pro tier ($29/mo, highlighted as "Most Popular"): Unlimited projects, 100GB, Priority support
+3. Enterprise tier (Custom): Everything in Pro, SSO, Dedicated manager
+4. Each card has: Tier name, price, feature list with checkmarks, CTA button
+5. Toggle switch for Monthly/Annual billing
+```
+
+**Result**: A pricing comparison with:
+- Three clearly differentiated tiers
+- Feature lists with checkmarks
+- Highlighted recommended tier
+- Clear CTAs for each option
 
 ## How These Were Generated
 

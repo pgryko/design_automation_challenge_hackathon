@@ -5,6 +5,7 @@ Handles extraction of text content from various document formats
 including PDF, DOCX, PPTX, and plain text files.
 """
 
+import contextlib
 import logging
 import tempfile
 from pathlib import Path
@@ -133,10 +134,8 @@ def _extract_with_docling(uploaded_file: UploadedFile, ext: str) -> str:
 
         finally:
             # Clean up temp file
-            try:
+            with contextlib.suppress(OSError):
                 tmp_path.unlink()
-            except OSError:
-                pass
 
 
 def get_supported_extensions() -> list[str]:
