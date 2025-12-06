@@ -1,148 +1,170 @@
-# Demo Results
+# Example Prompt Outputs
 
-This folder contains pre-generated design outputs demonstrating the Design Automation tool's capabilities.
+This folder contains AI-generated design outputs for the **Design Automation Challenge - HACKATHON@DAVOS**.
+
+All outputs were generated using the Design Automation tool with the example prompts from the challenge specification.
 
 ## Folder Structure
 
 ```
 result/
-├── dqai/                    # Dashboard UI mockups
-│   ├── dashboard_v1.png     # Light mode dashboard (469KB)
-│   └── dashboard_dark_v1.png # Dark mode refinement (928KB)
-├── carveout/                # Landing page, mobile app, and pricing demos
-│   ├── landing_hero_v1.png  # SaaS landing page hero (526KB)
-│   ├── mobile_fitness_v1.png # Mobile fitness app screen (869KB)
-│   └── pricing_table_v1.png # SaaS pricing table (506KB)
-└── README.md                # This file
+├── dqai/                           # DQAI (Data Quality AI) screens
+│   ├── 01_project_systems.png      # SAP systems associated with project
+│   ├── 02_installation_progress.png # JiVS IMP installation progress
+│   ├── 03_data_transfer.png        # Data transfer monitoring view
+│   ├── 04_analysis_results.png     # Analysis dashboard with trend chart
+│   └── 05_run_history.png          # Run history table
+├── carveout/                       # Carveout operation screens
+│   ├── 01_project_systems.png      # Source systems overview
+│   ├── 02_data_transfer.png        # Data transfer status
+│   ├── 03_carveout_definition.png  # Carveout scope definition
+│   ├── 04_subset_validation.png    # Subset preview and validation
+│   ├── 05_carveout_results.png     # Results with trend chart
+│   └── 06_run_history.png          # Carveout operation history
+└── README.md                       # This file
 ```
 
-## Generated Outputs
+---
 
-### Dashboard UI (Light Mode)
-**File**: `dqai/dashboard_v1.png`
+## DQAI (Data Quality AI) Outputs
 
-**Prompt Used**:
-```
-Generate a modern dashboard screen for a design automation tool showing:
-1. A sidebar with navigation items (Projects, Assets, Generate, History)
-2. Main content area with recent projects as cards
-3. Header with app name and user profile
-4. Clean, professional SaaS aesthetic with blue accent colors
-```
+Based on the challenge prompt: *"Simulate the lifecycle where SAP systems are first associated with the project, an installation is initiated for the target environment, and during this phase, a simulated progress experience is represented. After the environment is 'ready,' present a data transfer view in which transfer items transition from Pending to Success. When transfers have completed, show a results experience that compares metrics over time, including at least one trend chart and a run history."*
 
-**Result**: A professional DesignAI Assistant dashboard with:
-- Left sidebar navigation (Projects, Assets, Generate, History)
-- Recent Projects grid with thumbnail cards
-- "New Project" and "Create New Project" CTAs
-- User profile dropdown in header
-- Modern SaaS aesthetic with blue accents
+### Screen 1: Project Systems
+**File**: `dqai/01_project_systems.png`
 
-### Dashboard UI (Dark Mode - Refinement)
-**File**: `dqai/dashboard_dark_v1.png`
+Shows the OCC dashboard with SAP systems associated with a project:
+- Navigation sidebar (Dashboard, Projects, Systems, Transfers, Analysis)
+- SAP system cards with connection status badges
+- System configuration options
 
-**Refinement Prompt**:
-```
-Change the color scheme to use dark mode with a dark sidebar and dark background
-```
+### Screen 2: Installation Progress
+**File**: `dqai/02_installation_progress.png`
 
-**Result**: Same layout transformed to dark mode:
-- Dark background throughout
-- Light text for contrast
-- Preserved structure and blue accent colors
-- Professional dark theme appearance
+JiVS IMP installation wizard showing:
+- Multi-step progress indicator (Provision → Install → Configure → Prepare → Validate)
+- Current step details with progress bar
+- Log output and time estimates
+- Reflects mediator app and export handler setup
 
-### Landing Page Hero
-**File**: `carveout/landing_hero_v1.png`
+### Screen 3: Data Transfer
+**File**: `dqai/03_data_transfer.png`
 
-**Prompt Used**:
-```
-Design a modern SaaS landing page hero section with:
-1. A bold headline: "Transform Your Workflow"
-2. A subheadline explaining the product's key benefit
-3. Two CTA buttons: "Start Free Trial" (primary) and "Watch Demo" (secondary)
-4. A product screenshot or 3D illustration on the right side
-5. Subtle gradient background (purple to blue)
-6. Clean, professional tech startup aesthetic
-```
+Data transfer monitoring view showing:
+- Summary stats (Total Tables, Completed, In Progress, Pending)
+- Transfer table with status badges (Success/In Progress/Pending)
+- Real-time progress indication
+- Table names, record counts, timestamps
 
-**Result**: A professional SaaS hero section with:
-- Bold headline with clear value proposition
-- Primary and secondary CTAs
-- Product visualization
-- Modern gradient background
+### Screen 4: Analysis Results
+**File**: `dqai/04_analysis_results.png`
 
-### Mobile Fitness App
-**File**: `carveout/mobile_fitness_v1.png`
+Data Quality AI analysis dashboard with:
+- **Trend Chart**: Data Quality Score over time (line chart)
+- Summary metrics (Quality Score, Records Analyzed, Issues Found)
+- Issue breakdown by category
+- Export and action buttons
 
-**Prompt Used**:
-```
-Design a mobile fitness app home screen (iPhone format) showing:
-1. Greeting header "Good Morning, Alex" with profile avatar
-2. Today's workout card with exercise details and "Start" button
-3. Weekly progress ring showing 4/7 days completed
-4. Quick action buttons: Log Meal, Track Water, Check Stats
-5. Bottom navigation bar with 5 icons
-6. iOS-style design
-```
+### Screen 5: Run History
+**File**: `dqai/05_run_history.png`
 
-**Result**: A mobile app screen with:
-- Personalized greeting and profile
-- Today's workout card
-- Progress visualization
-- Quick actions
-- iOS-style navigation
+Analysis run history table showing:
+- Past runs with timestamps, duration, status
+- Quality scores per run
+- Filter and search capabilities
+- Repeatable analysis tracking
 
-### SaaS Pricing Table
-**File**: `carveout/pricing_table_v1.png`
+---
 
-**Prompt Used**:
-```
-Design a SaaS pricing page section showing 3 pricing tiers:
-1. Basic tier ($9/mo): 5 projects, 10GB storage, Email support
-2. Pro tier ($29/mo, highlighted as "Most Popular"): Unlimited projects, 100GB, Priority support
-3. Enterprise tier (Custom): Everything in Pro, SSO, Dedicated manager
-4. Each card has: Tier name, price, feature list with checkmarks, CTA button
-5. Toggle switch for Monthly/Annual billing
-```
+## Carveout Outputs
 
-**Result**: A pricing comparison with:
-- Three clearly differentiated tiers
-- Feature lists with checkmarks
-- Highlighted recommended tier
-- Clear CTAs for each option
+Based on the challenge prompt: *"Show a Carveout experience that defines a filtered subset (e.g., organizational units, time slices), previews/validates the subset (record counts, affected entities), and optionally indicates readiness to forward the carved data to a downstream target. Include at least one trend chart (e.g., carved volume over time) and a simple run history of carve operations."*
 
-## How These Were Generated
+### Screen 1: Project Systems
+**File**: `carveout/01_project_systems.png`
 
-1. **Create Project**: Started a new project in the Design Automation tool
-2. **Upload Context**: Added a project specification document (PDF)
-3. **Generate**: Entered the dashboard prompt with "UI Mockup" generation type
-4. **Refine**: Used the Refine button to request dark mode transformation
-5. **Export**: Downloaded individual PNGs
+Carveout project overview showing:
+- Source SAP systems with record counts
+- Target destination configuration
+- Project phase and timeline
 
-## Key Features Demonstrated
+### Screen 2: Data Transfer
+**File**: `carveout/02_data_transfer.png`
 
-- **AI Image Generation**: Gemini generates complete UI mockups from text prompts
-- **Iterative Refinement**: Refine existing outputs with additional feedback
-- **Style Consistency**: AI maintains design language across variations
-- **Document Context**: PDF/DOCX documents inform generation context
-- **Export Options**: Download individual images or ZIP archives
+Data transfer progress for carveout:
+- Transfer table with source tables and status
+- Record counts and progress indicators
+- Overall completion percentage
 
-## Regenerating Results
+### Screen 3: Carveout Definition
+**File**: `carveout/03_carveout_definition.png`
+
+Carveout scope configuration with:
+- **Organizational Units**: Company code selection
+- **Time Slice**: Date range picker
+- **Personnel Area**: Checkbox filters
+- Scope preview (estimated records, tables, data size)
+
+### Screen 4: Subset Validation
+**File**: `carveout/04_subset_validation.png`
+
+Subset preview and validation showing:
+- Validation status with warnings
+- Record counts by entity type
+- Referential integrity checks
+- Readiness indicator for execution
+
+### Screen 5: Carveout Results
+**File**: `carveout/05_carveout_results.png`
+
+Carveout execution results with:
+- **Trend Chart**: Carved data volume over time
+- Latest run summary (records, duration, status)
+- Target system status
+- Forward and export options
+
+### Screen 6: Run History
+**File**: `carveout/06_run_history.png`
+
+Carveout operation history showing:
+- Past carveout runs with scope and status
+- Record counts and durations
+- Target forwarding status
+- Audit trail for compliance
+
+---
+
+## Style Context
+
+All screens follow the **OCC/JiVS Enterprise** design language:
+- **Colors**: Primary blue (#1E40AF), Success green (#059669), Warning amber (#D97706)
+- **Typography**: Inter/system sans-serif, professional hierarchy
+- **Components**: Data tables, status badges, progress indicators, sidebar navigation
+- **Visual Style**: Enterprise SaaS, data-focused, professional German engineering quality
+
+---
+
+## Regenerating Outputs
 
 ```bash
 # Install dependencies
 uv sync
-npm install
 
-# Build CSS
-npm run tailwind:build
+# Set up environment
+cp .env.example .env
+# Add your OPENROUTER_API_KEY to .env
 
-# Run migrations
-uv run python manage.py migrate
-
-# Start server
-uv run python manage.py runserver
-
-# Navigate to http://localhost:8000
-# Create a project and generate designs
+# Generate outputs
+uv run python scripts/generate_challenge_outputs.py
 ```
+
+---
+
+## Key Features Demonstrated
+
+1. **Design Asset Ingestion**: Style context extracted and applied consistently
+2. **Knowledge Integration**: OCC/JiVS domain context informs all generations
+3. **Prompt-Based Generation**: Natural language prompts → complete UI screens
+4. **AI-Driven Output**: Gemini 2.0 Flash generates production-quality mockups
+5. **Consistency**: All screens share unified enterprise design language
+6. **Exportable**: PNG format, ready for presentation or further design work
