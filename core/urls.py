@@ -45,4 +45,20 @@ urlpatterns = [
         views.generation_results,
         name="generation_results",
     ),
+    # Refinement and Downloads
+    path(
+        "outputs/<uuid:pk>/refine/",
+        views.refine_output,
+        name="refine_output",
+    ),
+    path(
+        "outputs/<uuid:pk>/download/",
+        views.download_output,
+        name="download_output",
+    ),
+    path(
+        "generations/<uuid:pk>/download/",
+        views.download_generation,
+        name="download_generation",
+    ),
 ]

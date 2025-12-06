@@ -5,11 +5,12 @@ AI-powered design assistant that learns from existing designs and generates new 
 ## Features
 
 - **Design Asset Ingestion**: Upload UI screenshots, style guides, and brand images
-- **Style Extraction**: AI analyzes uploaded assets to understand visual style
-- **Context Documents**: Add specifications and guidelines to inform generation
+- **Style Extraction**: AI analyzes uploaded assets to understand visual style (colors, typography, spacing, components)
+- **Context Documents**: Add specifications and guidelines (PDF, DOCX, PPTX, TXT, MD, HTML)
 - **Prompt-Based Generation**: Describe what you want, AI generates matching designs
-- **Multiple Variations**: Generate 2-3 variations per request
-- **Export**: Download generated designs as PNG
+- **Multiple Variations**: Generate 1-3 variations per request
+- **Refinement Workflow**: Iteratively improve generated designs with feedback
+- **Export**: Download individual PNGs or all variations as ZIP
 
 ## Tech Stack
 
@@ -22,7 +23,7 @@ AI-powered design assistant that learns from existing designs and generates new 
 
 ### Prerequisites
 
-- Python 3.14+
+- Python 3.13+
 - Node.js 18+ (for Tailwind CSS)
 - [uv](https://github.com/astral-sh/uv) package manager
 

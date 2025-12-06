@@ -110,8 +110,43 @@ Upload PDF/DOCX/PPTX → Docling extracts markdown → Stored in doc.content →
 ## Remaining Hackathon Phases
 
 1. ~~**Document Support**~~ ✅ COMPLETED
-2. **Polish & Export** - Add export options (Figma, CSS, etc.)
+2. ~~**Polish & Export**~~ ✅ COMPLETED (2025-12-06)
 3. **Demo Preparation** - Create demo video and presentation
+
+## Phase 5: Polish & Export - COMPLETED (2025-12-06)
+
+### Features Implemented:
+
+1. **Refinement Workflow**
+   - Added `refine_image()` method to GeminiService
+   - New `refine_output` view for iterative design improvement
+   - Inline refinement form in generation results and history
+   - Creates new GenerationRequest linked to parent
+
+2. **Batch Download as ZIP**
+   - `download_generation` view creates ZIP of all variations
+   - `download_output` view for individual PNG downloads
+   - Download buttons added to results and history views
+
+3. **Error Handling & User Feedback**
+   - HTMX error event handlers with toast notifications
+   - Network error handling with user-friendly messages
+   - Global loading indicator during requests
+
+4. **UI Polish**
+   - Loading states with spinner animations
+   - Hover effects on output cards (download/refine buttons)
+   - Amber-colored refinement indicators
+   - "Refinement" badge on history items
+
+### Files Modified:
+- `core/services/gemini.py` - Added `refine_image()` method
+- `core/views.py` - Added `refine_output`, `download_generation`, `download_output`
+- `core/urls.py` - Added refinement and download routes
+- `templates/core/partials/generation_results.html` - Refine buttons, ZIP download
+- `templates/core/projects/tabs/history.html` - Refine buttons, ZIP download
+- `templates/base.html` - HTMX error handlers
+- `README.md` - Updated features list
 
 ## Git Commits
 

@@ -11,7 +11,7 @@ from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
-from .models import ContextDocument, DesignAsset, GenerationRequest, Project
+from .models import ContextDocument, DesignAsset, GeneratedOutput, GenerationRequest, Project
 from .services import GeminiService, StyleService, extract_content
 from .services.gemini import GeminiServiceError
 
@@ -567,3 +567,192 @@ def generation_results(request, pk):
         "core/partials/generation_results.html",
         {"generation": generation, "project": project},
     )
+
+
+@require_POST
+def refine_output(request, pk):
+    """Start a refinement of a specific generated output."""
+    output = get_object_or_404(GeneratedOutput, pk=pk)
+    original_request = output.request
+    project = original_request.project
+
+    refinement_prompt = request.POST.get("refinement_prompt", "").strip()
+
+    if not refinement_prompt:
+        return JsonResponse({"success": False, "error": "Refinement prompt required"}, status=400)
+
+    # Create a new generation request linked to the parent
+    generation = GenerationRequest.objects.create(
+        project=project,
+        prompt=f"Refine: {refinement_prompt}\n\nOriginal: {original_request.prompt}",
+        output_type=original_request.output_type,
+        num_variations=1,  # Refinements typically produce 1 variation
+        status=GenerationRequest.Status.PENDING,
+        parent_request=original_request,
+        refinement_prompt=refinement_prompt,
+    )
+
+    # Start refinement in background thread
+    _run_async_in_thread(_run_refinement_background(generation.pk, output.pk))
+
+    # Return pending state with SSE connection
+    return render(
+        request,
+        "core/partials/generation_pending.html",
+        {"generation": generation, "project": project},
+    )
+
+
+async def _run_refinement_background(generation_pk, source_output_pk):
+    """Background task to run refinement."""
+    from datetime import datetime
+
+    from django.core.files.base import ContentFile
+    from django.utils import timezone
+
+    from asgiref.sync import sync_to_async
+
+    from core.models import GeneratedOutput, GenerationRequest
+
+    try:
+        generation = await GenerationRequest.objects.select_related("project").aget(
+            pk=generation_pk
+        )
+        source_output = await GeneratedOutput.objects.aget(pk=source_output_pk)
+
+        # Update status
+        generation.status = GenerationRequest.Status.PROCESSING
+        generation.progress = 10
+        generation.progress_message = "Preparing refinement..."
+        await generation.asave()
+
+        # Build style context
+        style_service = StyleService()
+        style_context = await sync_to_async(style_service.build_style_context)(
+            generation.project
+        )
+
+        generation.progress = 30
+        generation.progress_message = "Refining design..."
+        await generation.asave()
+
+        # Get the original image path
+        original_image_path = source_output.image.path
+
+        # Run refinement
+        gemini = GeminiService()
+        try:
+            image_bytes = await gemini.refine_image(
+                original_image_path=original_image_path,
+                refinement_prompt=generation.refinement_prompt,
+                style_context=style_context,
+            )
+
+            generation.progress = 80
+            generation.progress_message = "Saving refined design..."
+            await generation.asave()
+
+            # Save refined image
+            output = GeneratedOutput(
+                request=generation,
+                variation_number=1,
+                output_type=generation.output_type,
+                metadata={
+                    "generated_at": datetime.now().isoformat(),
+                    "type": "refinement",
+                    "source_output_id": str(source_output_pk),
+                },
+            )
+            output.image.save(
+                f"refinement_{generation.pk}_v1.png",
+                ContentFile(image_bytes),
+                save=False,
+            )
+            await output.asave()
+
+        except GeminiServiceError as e:
+            # Fall back to text description
+            logger.warning(f"Refinement image generation failed: {e}")
+            text_response = await gemini.generate_with_text_response(
+                prompt=f"Refine the following design: {generation.refinement_prompt}",
+                style_context=style_context,
+                output_type=generation.output_type,
+            )
+
+            output = GeneratedOutput(
+                request=generation,
+                variation_number=1,
+                output_type=generation.output_type,
+                metadata={
+                    "generated_at": datetime.now().isoformat(),
+                    "type": "text_refinement",
+                    "content": text_response,
+                },
+            )
+            await output.asave()
+
+        # Mark as completed
+        generation.status = GenerationRequest.Status.COMPLETED
+        generation.progress = 100
+        generation.progress_message = "Refinement complete!"
+        generation.completed_at = timezone.now()
+        await generation.asave()
+
+        logger.info(f"Refinement {generation_pk} completed successfully")
+
+    except Exception as e:
+        logger.error(f"Refinement {generation_pk} failed: {e}")
+        try:
+            generation = await GenerationRequest.objects.aget(pk=generation_pk)
+            generation.status = GenerationRequest.Status.FAILED
+            generation.error_message = str(e)
+            await generation.asave()
+        except Exception as save_error:
+            logger.error(
+                f"Failed to save error state for refinement {generation_pk}: {save_error}"
+            )
+
+
+@require_GET
+def download_generation(request, pk):
+    """Download all outputs from a generation as a ZIP file."""
+    import io
+    import zipfile
+
+    generation = get_object_or_404(GenerationRequest, pk=pk)
+
+    if generation.status != GenerationRequest.Status.COMPLETED:
+        return JsonResponse({"error": "Generation not complete"}, status=400)
+
+    # Create ZIP file in memory
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for output in generation.outputs.all():
+            if output.image:
+                # Add image to ZIP
+                filename = f"variation_{output.variation_number}.png"
+                zip_file.write(output.image.path, filename)
+
+    zip_buffer.seek(0)
+
+    # Create response
+    response = HttpResponse(zip_buffer.read(), content_type="application/zip")
+    response["Content-Disposition"] = f'attachment; filename="generation_{generation.pk}.zip"'
+    return response
+
+
+@require_GET
+def download_output(request, pk):
+    """Download a single output image."""
+    output = get_object_or_404(GeneratedOutput, pk=pk)
+
+    if not output.image:
+        return JsonResponse({"error": "No image available"}, status=404)
+
+    # Read the image file
+    with open(output.image.path, "rb") as f:
+        image_data = f.read()
+
+    response = HttpResponse(image_data, content_type="image/png")
+    response["Content-Disposition"] = f'attachment; filename="design_variation_{output.variation_number}.png"'
+    return response

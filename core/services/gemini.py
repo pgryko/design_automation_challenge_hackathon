@@ -366,3 +366,109 @@ Provide a detailed description that could be used to create the design, includin
             # Handle reasoning models that return content in 'reasoning' field
             result: str = message.get("content", "") or message.get("reasoning", "")
             return result
+
+    async def refine_image(
+        self,
+        original_image_path: str | Path,
+        refinement_prompt: str,
+        style_context: str = "",
+    ) -> bytes:
+        """
+        Refine an existing generated image based on user feedback.
+
+        Args:
+            original_image_path: Path to the original generated image
+            refinement_prompt: User's refinement instructions
+            style_context: Style guide/description to follow
+
+        Returns:
+            Refined image as bytes
+        """
+        # Build the message content with the original image
+        content = []
+
+        # Add the original image
+        image_data = self._encode_image(original_image_path)
+        mime_type = self._get_mime_type(original_image_path)
+        content.append(
+            {
+                "type": "image_url",
+                "image_url": {"url": f"data:{mime_type};base64,{image_data}"},
+            }
+        )
+
+        # Build the refinement prompt
+        full_prompt = f"""You are an expert UI/UX designer. I'm showing you a design that needs refinement.
+
+STYLE GUIDE TO MAINTAIN:
+{style_context}
+
+REFINEMENT REQUEST:
+{refinement_prompt}
+
+IMPORTANT INSTRUCTIONS:
+1. Keep the overall layout and structure similar to the original
+2. Apply the specific changes requested in the refinement
+3. Maintain the same visual style (colors, typography, spacing)
+4. Generate a complete, production-ready refined design
+
+Generate the refined image now."""
+
+        content.append({"type": "text", "text": full_prompt})
+
+        payload = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": content}],
+            "max_tokens": 4096,
+            "temperature": 0.7,  # Lower temperature for more consistent refinements
+            "modalities": ["image", "text"],
+        }
+
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(
+                f"{self.base_url}/chat/completions",
+                headers=self._get_headers(),
+                json=payload,
+            )
+
+            if response.status_code != 200:
+                logger.error(
+                    f"Gemini API error: {response.status_code} - {response.text}"
+                )
+                raise GeminiServiceError(f"API error: {response.status_code}")
+
+            data = response.json()
+            message = data["choices"][0]["message"]
+
+            # Check for images array (OpenRouter SDK format)
+            if message.get("images"):
+                for image in message["images"]:
+                    image_url = image.get("image_url", {}).get("url", "")
+                    if image_url.startswith("data:"):
+                        base64_data = image_url.split(",")[1]
+                        return base64.b64decode(base64_data)
+
+            # Handle different response formats
+            if "content" in message:
+                resp_content = message["content"]
+
+                if isinstance(resp_content, list):
+                    for item in resp_content:
+                        if isinstance(item, dict) and item.get("type") == "image_url":
+                            image_url_data = item.get("image_url", {})
+                            if isinstance(image_url_data, dict):
+                                image_url = str(image_url_data.get("url", ""))
+                                if image_url.startswith("data:"):
+                                    base64_data = image_url.split(",")[1]
+                                    return base64.b64decode(base64_data)
+
+                if isinstance(resp_content, str):
+                    if "data:image" in resp_content:
+                        base64_data = resp_content.split(",")[1].split('"')[0]
+                        return base64.b64decode(base64_data)
+
+                    raise GeminiServiceError(
+                        f"No image in refinement response. Model returned: {resp_content[:500]}"
+                    )
+
+            raise GeminiServiceError("Unexpected response format from refinement API")
