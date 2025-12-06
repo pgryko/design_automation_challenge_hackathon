@@ -16,6 +16,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "bandit>=1.8.0",
     "django-stubs>=5.2.8",
     "mypy>=1.19.0",
     "pre-commit>=4.5.0",

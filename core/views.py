@@ -443,8 +443,10 @@ async def _run_generation_background(generation_pk):
             generation.status = GenerationRequest.Status.FAILED
             generation.error_message = str(e)
             await generation.asave()
-        except Exception:
-            pass
+        except Exception as save_error:
+            logger.error(
+                f"Failed to save error state for generation {generation_pk}: {save_error}"
+            )
 
 
 @require_GET
